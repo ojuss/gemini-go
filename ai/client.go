@@ -2,10 +2,11 @@ package ai
 
 import (
 	"context"
-	
+	"fmt"
 	"log"
 
 	"gemini-go/lib"
+	
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
 )
@@ -24,12 +25,25 @@ func Ai(prompt string) (string, error) {
 	response, err := model.GenerateContent(ctx, genai.Text("you're a meme generator so generate only 1 caption for meme on "+prompt))
 
 	if err != nil {
-		return "", err
+		return "Error getting response", err
 	}
 
-	if response != nil && len(response.Candidates) > 0 {
-		return response.Candidates[0].Content.Part[0], nil
+
+
+	for _, cand := range response.Candidates {
+		for _, part := range cand.Content.Parts {
+
+			text, ok := part.(genai.Text)
+			if !ok {
+			fmt.Println(part)
+			continue // Skip if the part is not text
+			}
+			fmt.Println(text)
+			return string(text), nil	
+			
+		}
 	}
+	fmt.Println("---")
 
 	return "No response from AI", nil
 }

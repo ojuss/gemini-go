@@ -3,7 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-
+	"bytes"
+	"io"
+	"fmt"
 	"gemini-go/ai"
 	
 )
@@ -12,17 +14,18 @@ var reqPayload struct {
 	Prompt string `json:"prompt"`
 }
 
-type resPayload struct {
-	Response string`json:"response"`
+var resPayload struct {
+	Response string `json:"response"`
 }
 
 func AiPromptHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
 
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-	}
+	// method check doesn't work correctly
+	// shows json formatting issue
+	// if r.Method != "POST" {
 
-	
+	// 	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	// }
 
 	err := json.NewDecoder(r.Body).Decode(&reqPayload)
 
@@ -38,9 +41,22 @@ func AiPromptHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := resPayload{Response: resp}
+	var buffer bytes.Buffer	
+	resPayload.Response = resp
+
+	err = json.NewEncoder(&buffer).Encode(resPayload)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	// response := resPayload{Response: resp}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	_, err = io.Copy(w, &buffer)
+
+	if err != nil {
+		fmt.Println(err)
+	}
 
 }
